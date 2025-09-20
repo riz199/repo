@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Text Encryptor/Decryptor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    textarea, input[type="password"] { width: 100%; margin: 10px 0; padding: 10px; }
+    button { padding: 10px 15px; margin: 5px 5px 10px 0; }
+  </style>
+</head>
+<body>
+  <h2>🔐 AES Text Encryptor / Decryptor</h2>
+
+  <label>Upload .txt File:</label>
+  <input type="file" id="fileInput" accept=".txt"><br>
+
+  <label>Original Text:</label>
+  <textarea id="originalText" rows="10" placeholder="File content here..."></textarea>
+
+  <label>Password:</label>
+  <input type="password" id="password" placeholder="Enter password">
+
+  <div>
+    <button onclick="encryptText()">Encrypt</button>
+    <button onclick="decryptText()">Decrypt</button>
+  </div>
+
+  <label>Result:</label>
+  <textarea id="resultText" rows="10" placeholder="Encrypted/Decrypted text..."></textarea><br>
+
+  <button onclick="saveFile()">💾 Save Result</button>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const originalText = document.getElementById('originalText');
+    const resultText = document.getElementById('resultText');
+    const password = document.getElementById('password');
+
+    const PREFIX = "!@#$%^&*()_+ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+    const SUFFIX = "+_)(*&^%$ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+
+    // Read uploaded file
+    fileInput.addEventListener('change', function () {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          originalText.value = e.target.result;
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    function encryptText() {
+      const text = originalText.value;
+      const pass = password.value;
+      if (!text || !pass) return alert("Please enter both text and password.");
+
+      const finalPassword = PREFIX + pass + SUFFIX;
+      const encrypted = CryptoJS.AES.encrypt(text, finalPassword).toString();
+      resultText.value = encrypted;
+    }
+
+    function decryptText() {
+      const encryptedText = originalText.value.trim();
+      const pass = password.value;
+      if (!encryptedText || !pass) return alert("Please enter both encrypted text and password.");
+
+      const finalPassword = PREFIX + pass + SUFFIX;
+
+      try {
+        const lines = encryptedText.split('\n').filter(line => line.trim() !== '');
+        const decryptedLines = lines.map(line => {
+          const bytes = CryptoJS.AES.decrypt(line.trim(), finalPassword);
+          const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+          if (!decrypted) throw new Error("Decryption failed for a line");
+          return decrypted;
+        });
+        resultText.value = decryptedLines.join('\n');
+      } catch (e) {
+        alert("Invalid password or corrupted data.");
+      }
+    }
+
+    function saveFile() {
+      const blob = new Blob([resultText.value], { type: "text/plain;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "output.txt";
+      link.click();
+    }
+  </script>
+</body>
+</html>
