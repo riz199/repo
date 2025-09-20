@@ -24,17 +24,28 @@
   </div>
 
   <script>
-    // 🔑 Password: test123
-    // 🔹 Replace the dummy ciphertexts below with your actual encrypted URLs from your encryptor
+    // 🔹 Replace the dummy ciphertexts with your actual encrypted URLs
     const encryptedLinks = [
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
-	  "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
+      "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo",
       "U2FsdGVkX1/AFC8msEs9ZOy47GOBuC3aEkXwD9/kFPxfT4BYSog7CFV5Ys9ppQgo"
+    ];
+
+    // 🔹 Replace the dummy ciphertexts with your actual encrypted button titles
+    const encryptedTitles = [
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w==",
+      "U2FsdGVkX1+ax7X2nffXO6IQFJFfKviZLGKkhPY1BBoK3PbhKIZjMxfhW9K8O3iouFBlPRiEe34/vhMKkFRl7w=="
     ];
 
     // Prefix & Suffix for password
@@ -47,11 +58,15 @@
 
       let html = "";
       try {
-        encryptedLinks.forEach(enc => {
-          const bytes = CryptoJS.AES.decrypt(enc, pass);
-          const link = bytes.toString(CryptoJS.enc.Utf8);
-          if (!link) throw new Error("Bad password");
-          html += `<a href="${link}" target="_blank" class="btn btn-outline-success d-block mb-2">${link}</a>`;
+        encryptedLinks.forEach((enc, i) => {
+          const bytesLink = CryptoJS.AES.decrypt(enc, pass);
+          const link = bytesLink.toString(CryptoJS.enc.Utf8);
+
+          const bytesTitle = CryptoJS.AES.decrypt(encryptedTitles[i], pass);
+          const title = bytesTitle.toString(CryptoJS.enc.Utf8);
+
+          if (!link || !title) throw new Error("Bad password");
+          html += `<a href="${link}" target="_blank" class="btn btn-outline-success d-block mb-2">${title}</a>`;
         });
         document.getElementById("links").innerHTML = html;
         document.getElementById("loginBox").classList.add("d-none");
@@ -60,6 +75,11 @@
         alert("❌ Wrong password");
       }
     }
+
+    // Trigger unlock on Enter key
+    document.getElementById("password").addEventListener("keyup", function(event) {
+      if (event.key === "Enter") unlock();
+    });
   </script>
 </body>
 </html>
