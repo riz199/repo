@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Retriever</title>
+
+  <!-- ✅ Bootstrap 5 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      background-color: #f9fafb;
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="password"], input[type="file"], select, datalist, textarea {
+      font-size: 0.9rem;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 8px;
+    }
+    button {
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      margin: 5px 3px 5px 0;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Ensure uniform height for buttons and fields */
+    input[type="text"], input[type="password"], button {
+      height: 38px !important;
+    }
+
+    .link-row,
+    .password-row,
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    #linkInput, #encryptedLinkSelector {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .result-block {
+      border-top: 1px solid #ddd;
+      padding: 6px 0 4px;
+      margin-top: 6px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .result-block h4 {
+      margin: 4px 0 8px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      margin: 2px 0;
+      flex-wrap: wrap;
+    }
+
+    .field-row label {
+      flex: 1;
+      font-weight: 500;
+      font-size: 0.85rem;
+      margin-right: 6px;
+      white-space: nowrap;
+    }
+
+    .field-row input {
+      flex: 2;
+      font-size: 0.85rem;
+      padding: 4px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    .field-row button.copy-btn {
+      flex-shrink: 0;
+      margin-left: 6px;
+      font-size: 0.85rem;
+      padding: 4px 8px;
+      background-color: #6c757d;
+    }
+
+    .field-row button.copy-btn:hover {
+      background-color: #5a6268;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      display: none;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      background: #fff;
+      padding: 10px;
+    }
+
+    #textarea1-buttons,
+    #textarea2-buttons {
+      display: none;
+      gap: 10px;
+      margin-top: 6px;
+      flex-wrap: nowrap;
+    }
+
+    hr {
+      margin: 1.5rem 0;
+    }
+
+    label {
+      font-weight: 500;
+      margin-top: 0.5rem;
+      display: block;
+    }
+
+    @media (max-width: 576px) {
+      body {
+        padding: 10px;
+      }
+      h2 {
+        font-size: 1.4rem;
+      }
+      button {
+        width: 100%;
+      }
+      .link-row,
+      .password-row,
+      .search-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+
+<body>
+  <h2>Retriever</h2>
+
+  <label>Upload File (.txt):</label>
+  <input type="file" id="fileInput" accept=".txt" class="form-control mb-2">
+
+  <label>Paste Link:</label>
+  <div class="link-row">
+    <input type="text" id="linkInput" placeholder="Paste link here..." class="form-control" />
+    <input list="encryptedLinks" id="encryptedLinkSelector" placeholder="Or select predefined" class="form-control" />
+    <datalist id="encryptedLinks">
+      <option value="john"></option>
+      <option value="paul"></option>
+    </datalist>
+  </div>
+
+  <label>AES Decryption Password and Load:</label>
+  <div class="password-row">
+    <input type="password" id="aesPassword" placeholder="Enter AES password" class="form-control">
+    <button onclick="loadEncryptedData()">🔓 Load Encrypted Data</button>
+  </div>
+
+  <hr>
+
+  <label>Fuzzy Search by Account Label:</label>
+  <div class="search-row">
+    <input type="text" id="searchInput" placeholder="Search 'john bank', etc." oninput="handleSearch()" class="form-control">
+    <button onclick="retrieveAll()">📜 Retrieve All</button>
+  </div>
+
+  <div id="searchResults"></div>
+
+  <!-- Textarea 1 -->
+  <textarea id="allDecrypted" readonly></textarea>
+
+  <div id="textarea1-buttons" style="display:none;">
+    <button onclick="encryptTextareaContent()">🔒 Encrypt Textarea Content</button>
+    <button onclick="copyTextareaContent('allDecrypted')">📋 Copy Textarea Content</button>
+    <button onclick="saveTextareaContent('allDecrypted')">💾 Save Textarea Content</button>
+  </div>
+
+  <!-- Textarea 2 -->
+  <textarea id="encryptedOutput" readonly style="display:none;"></textarea>
+
+  <div id="textarea2-buttons" style="display:none;">
+    <button onclick="copyTextareaContent('encryptedOutput')">📋 Copy Encrypted Content</button>
+    <button onclick="saveTextareaContent('encryptedOutput')">💾 Save Encrypted Content</button>
+  </div>
+
+  <!-- Original JavaScript (unchanged) -->
+<script>
+    const PASSWORD_PREFIX = "!@#$%^&*()_+ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+    const PASSWORD_SUFFIX = "+_)(*&^%$ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+    const HARDCODED_FALLBACK_LINK = "https://example.com/default.txt";
+    const ENCRYPTED_LINKS = {
+      anon: "U2FsdGVkX1/e1MQlF8ECQGTO7yTWEPhUgJy9frLZ4nF0DpYqjyggP8SR5fH8mWB9633XbVG6QV9dpNcbSjR68OAcW4xvu/S0345E1I8nL/zN7X49/+A4gkuAVGHK9pw3H8O9MNfV0De1GT7spsTjl69FqXo1M7V0J0fVL7KlLFt9+11beAje02UU09NDrz/Va2lfEPCR2ku5pBnLfDN04w==",
+      paul: "U2FsdGVkX19oN2I7FJ6X/o8pbcMspFUyCz...",
+      mano: "U2FsdGVkX19VoivPdGfYddvYxGHUXWkX..."
+    };
+
+    let encryptedContent = '';
+    let decryptedBlocks = [];
+
+    document.getElementById('fileInput').addEventListener('change', function(){
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        encryptedContent = e.target.result;
+        alert("File loaded successfully.");
+      };
+      reader.readAsText(file);
+    });
+
+    async function loadRemoteContent(url) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Network or CORS error.");
+        return await res.text();
+      } catch (err) {
+        alert("Failed to fetch file: " + err.message);
+        return null;
+      }
+    }
+
+    function normalizeText(str) {
+      return str.toLowerCase().replace(/[^a-z0-9 ]+/g, '').trim().split(/\s+/);
+    }
+
+    async function loadEncryptedData() {
+      const rawPass = document.getElementById('aesPassword').value.trim();
+      if (!rawPass) { alert("Enter AES password."); return; }
+      const aesPass = PASSWORD_PREFIX + rawPass + PASSWORD_SUFFIX;
+      const linkInput = document.getElementById('linkInput').value.trim();
+      const selector = document.getElementById('encryptedLinkSelector').value.trim();
+      let content = encryptedContent;
+
+      if (!content) {
+        if (linkInput) {
+          content = await loadRemoteContent(linkInput);
+          if (!content) return;
+        } else if (selector && ENCRYPTED_LINKS[selector]) {
+          try {
+            const decBytes = CryptoJS.AES.decrypt(ENCRYPTED_LINKS[selector], aesPass);
+            const fetchLink = decBytes.toString(CryptoJS.enc.Utf8);
+            if (!fetchLink) throw new Error();
+            content = await loadRemoteContent(fetchLink);
+            if (!content) return;
+          } catch(e) {
+            alert("Invalid password or link.");
+            return;
+          }
+        } else {
+          content = await loadRemoteContent(HARDCODED_FALLBACK_LINK);
+          if (!content) return;
+        }
+      }
+
+      try {
+        decryptedBlocks = [];
+        const lines = content.split('\n').map(x=>x.trim()).filter(x=>x);
+        let full = "";
+        for (let l of lines) {
+          const dec = CryptoJS.AES.decrypt(l, aesPass).toString(CryptoJS.enc.Utf8);
+          if (!dec) continue;
+          full += dec + "\n";
+        }
+        decryptedBlocks = full.split(/<ACTDET>/).slice(1).map(x=>"<ACTDET>"+x.trim());
+        alert("Decryption successful ("+decryptedBlocks.length+" entries).");
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+        let area = document.getElementById('allDecrypted');
+        area.style.display = 'none';
+        area.value = '';
+
+        // Hide buttons and textarea-2 on load encrypted
+        document.getElementById('textarea1-buttons').style.display = 'none';
+        document.getElementById('encryptedOutput').style.display = 'none';
+        document.getElementById('textarea2-buttons').style.display = 'none';
+      } catch(e) {
+        alert("Decryption failed.");
+        decryptedBlocks = [];
+      }
+    }
+
+    function handleSearch() {
+      // === Added to hide all retrieve-all related textarea and buttons ===
+      document.getElementById('allDecrypted').style.display = 'none';
+      document.getElementById('textarea1-buttons').style.display = 'none';
+      document.getElementById('textarea2-buttons').style.display = 'none';
+      document.getElementById('encryptedOutput').style.display = 'none';
+
+      const qRaw = document.getElementById('searchInput').value.trim();
+      const resultsDiv = document.getElementById('searchResults');
+      resultsDiv.innerHTML = '';
+
+      const q = normalizeText(qRaw).filter(x=>x);
+      if (!q.length) return;
+
+      decryptedBlocks.forEach(block => {
+        const m = block.match(/<AccountLabel>(.*?)<\/AccountLabel>/i);
+        if (!m) return;
+        const labelWords = normalizeText(m[1]);
+        if (!q.every(term=> labelWords.some(w=>w.includes(term)))) return;
+
+        const cont = document.createElement('div'); cont.className='result-block';
+        const header = document.createElement('h4'); header.innerText = m[1];
+        cont.appendChild(header);
+
+        [...block.matchAll(/<([^\/][^>]+)>(.*?)<\/\1>/g)].forEach(f=>{
+          if (f[1]==='AccountLabel') return;
+          const row = document.createElement('div'); row.className='field-row';
+          const lbl = document.createElement('label'); lbl.textContent = f[1];
+          const inp = document.createElement('input'); inp.type='text'; inp.value=f[2]; inp.readOnly=true;
+          const btn = document.createElement('button'); btn.textContent='Copy';
+          btn.className = 'copy-btn';
+          btn.onclick = ()=> navigator.clipboard.writeText(f[2]);
+          row.appendChild(lbl); row.appendChild(inp); row.appendChild(btn);
+          cont.appendChild(row);
+        });
+        resultsDiv.appendChild(cont);
+      });
+    }
+
+    function retrieveAll() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchResults').innerHTML = '';
+      const area = document.getElementById('allDecrypted');
+      area.style.display = 'block';
+      area.value = decryptedBlocks.join('\n\n');
+
+      // Show buttons below textarea-1
+      document.getElementById('textarea1-buttons').style.display = 'flex';
+
+      // Hide textarea-2 and its buttons if previously visible
+      document.getElementById('encryptedOutput').style.display = 'none';
+      document.getElementById('textarea2-buttons').style.display = 'none';
+    }
+
+    function encryptTextareaContent() {
+      const pwdRaw = document.getElementById('aesPassword').value.trim();
+      if (!pwdRaw) {
+        alert("Enter AES password to encrypt.");
+        return;
+      }
+      const aesPass = PASSWORD_PREFIX + pwdRaw + PASSWORD_SUFFIX;
+      const plainText = document.getElementById('allDecrypted').value;
+      if (!plainText) {
+        alert("Textarea is empty, nothing to encrypt.");
+        return;
+      }
+      try {
+        const encrypted = CryptoJS.AES.encrypt(plainText, aesPass).toString();
+        const encArea = document.getElementById('encryptedOutput');
+        encArea.value = encrypted;
+        encArea.style.display = 'block';
+
+        // Show buttons below textarea-2
+        document.getElementById('textarea2-buttons').style.display = 'flex';
+      } catch {
+        alert("Encryption failed.");
+      }
+    }
+
+    function copyTextareaContent(id) {
+      const area = document.getElementById(id);
+      if (!area.value) {
+        alert("Nothing to copy.");
+        return;
+      }
+      navigator.clipboard.writeText(area.value).then(() => {
+        alert("Copied to clipboard.");
+      }).catch(() => {
+        alert("Copy failed.");
+      });
+    }
+
+    function saveTextareaContent(id) {
+      const area = document.getElementById(id);
+      if (!area.value) {
+        alert("Nothing to save.");
+        return;
+      }
+      const blob = new Blob([area.value], {type: "text/plain"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = id === 'allDecrypted' ? 'decrypted.txt' : 'encrypted.txt';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    }
+  </script>
+</body>
+</html>
