@@ -164,6 +164,56 @@
         align-items: stretch;
       }
     }
+	
+@media (max-width: 420px) {
+  /* Ensure inputs remain usable but smaller */
+  input[type="text"], input[type="password"], .form-control {
+    font-size: 0.82rem !important;
+    padding: 6px !important;
+  }
+
+  /* Reduce button font and padding but keep height 38px exactly */
+  button {
+    font-size: 0.78rem !important;
+    padding: 4px 8px !important;
+    height: 38px !important; /* keep strict same height */
+    line-height: 1 !important;
+    min-width: 0 !important;    /* allow shrinking */
+    max-width: 100%;            /* do not overflow container */
+    box-sizing: border-box !important;
+    white-space: nowrap !important;      /* single line */
+    overflow: hidden !important;         /* hide overflow */
+    text-overflow: ellipsis !important;  /* show ellipsis when needed */
+  }
+
+  /* Make the big action buttons (that contain emoji + long text) behave better:
+     limit their max width so they don't push other elements */
+  #textarea1-buttons button,
+  #textarea2-buttons button,
+  .password-row > button,
+  .search-row > button {
+    max-width: 220px !important; /* safe cap for tiny screens */
+  }
+
+  /* Copy buttons inside field-row (short labels) should be compact */
+  .field-row button.copy-btn {
+    padding: 4px 6px !important;
+    font-size: 0.78rem !important;
+    margin-left: 6px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    height: 38px !important;
+  }
+
+  /* If a button is in a stacked (column) layout, let it be full width but still clipped */
+  .link-row, .password-row, .search-row {
+    gap: 8px;
+  }
+
+  /* Slightly tighten headings to save vertical space on tiny screens */
+  .result-block h4 { font-size: 0.95rem; }
+}
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
