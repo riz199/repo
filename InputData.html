@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Account Encryptor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* Retriever Theme */
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background-color: #f9fafb;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    label {
+      font-weight: 500;
+      margin-top: 10px;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+
+    button {
+      height: 42px;
+      font-size: 0.95rem;
+      padding: 0 15px;
+      border-radius: 6px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.2s ease-in-out;
+      white-space: nowrap;
+    }
+
+    button:hover { background-color: #0056b3; }
+    button:active { background-color: #004a99; }
+
+    .question-block {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    hr {
+      margin: 20px 0;
+      border: none;
+      border-top: 1px solid #ddd;
+    }
+
+    /* Mobile-friendly adjustments */
+    @media (max-width: 420px) {
+      button {
+        font-size: 0.8rem;
+        height: 40px;
+        padding: 0 10px;
+      }
+      textarea, input {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 340px) {
+      button {
+        font-size: 0.75rem;
+        height: 38px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h2>🔐 Account Details Encryptor</h2>
+
+  <label>Account Label:</label>
+  <input type="text" id="accountLabel" placeholder="e.g. John Abc Bank 1">
+
+  <label>Username:</label>
+  <input type="text" id="username">
+
+  <label>Password:</label>
+  <input type="text" id="passwordInput">
+
+  <label>Password Code:</label>
+  <input type="text" id="passwordCode">
+
+  <label>PIN:</label>
+  <input type="text" id="pin">
+
+  <label>Email Address:</label>
+  <input type="email" id="email">
+
+  <div id="questionsContainer"></div>
+  <button onclick="addQuestion()">Add Additional Question</button>
+
+  <hr>
+
+  <button onclick="generateText()">Generate Text</button>
+  <button onclick="populateFieldsFromText()">Populate</button>
+
+  <label>Generated Text:</label>
+  <textarea id="generatedText" rows="10"></textarea>
+
+  <label>Master Password:</label>
+  <input type="password" id="masterPassword">
+
+  <button onclick="encryptGenerated()">Encrypt</button>
+
+  <label>Encrypted Text:</label>
+  <textarea id="encryptedText" rows="10"></textarea>
+
+  <div class="button-group">
+    <button onclick="copyToClipboard()">📋 Copy Encrypted</button>
+    <button onclick="decryptEncrypted()">🔓 Decrypt</button>
+  </div>
+
+  <label>Decrypted Output:</label>
+  <textarea id="decryptedOutput" rows="10"></textarea>
+  <button onclick="copyDecToClipboard()">📋 Copy Decrypted</button>
+
+  <script>
+    const PREFIX = "!@#$%^&*()_+ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+    const SUFFIX = "+_)(*&^%$ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+    let questionCount = 0;
+
+    function addQuestion() {
+      const container = document.getElementById('questionsContainer');
+      const block = document.createElement('div');
+      block.className = 'question-block';
+      block.innerHTML = `
+        <input type="text" placeholder="Additional Question" class="question">
+        <input type="text" placeholder="Answer" class="answer">
+      `;
+      container.appendChild(block);
+      questionCount++;
+    }
+
+    function generateText() {
+      let output = '<ACTDET>\n';
+      const fields = [
+        { tag: 'AccountLabel', value: document.getElementById('accountLabel').value },
+        { tag: 'Username', value: document.getElementById('username').value },
+        { tag: 'Password', value: document.getElementById('passwordInput').value },
+        { tag: 'PasswordCode', value: document.getElementById('passwordCode').value },
+        { tag: 'PIN', value: document.getElementById('pin').value },
+        { tag: 'Email', value: document.getElementById('email').value },
+      ];
+      fields.forEach(field => {
+        if (field.value.trim()) output += `  <${field.tag}>${field.value.trim()}</${field.tag}>\n`;
+      });
+
+      const questions = document.querySelectorAll('.question');
+      const answers = document.querySelectorAll('.answer');
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i].value.trim();
+        const a = answers[i].value.trim();
+        if (q && a) {
+          output += `  <Question${i + 1}>${q}</Question${i + 1}>\n`;
+          output += `  <Answer${i + 1}>${a}</Answer${i + 1}>\n`;
+        }
+      }
+      output += '</ACTDET>';
+      document.getElementById('generatedText').value = output;
+    }
+
+    function encryptGenerated() {
+      const plainText = document.getElementById('generatedText').value;
+      const pass = document.getElementById('masterPassword').value;
+      if (!plainText || !pass) return alert("Please provide both generated text and master password.");
+
+      const finalPassword = PREFIX + pass + SUFFIX;
+      const encrypted = CryptoJS.AES.encrypt(plainText, finalPassword).toString();
+      document.getElementById('encryptedText').value = encrypted;
+    }
+
+    function decryptEncrypted() {
+      const encryptedText = document.getElementById('encryptedText').value.trim();
+      const pass = document.getElementById('masterPassword').value;
+      if (!encryptedText || !pass) return alert("Please provide both encrypted text and master password.");
+
+      const finalPassword = PREFIX + pass + SUFFIX;
+      const lines = encryptedText.split('\n');
+      let result = "";
+      for (const line of lines) {
+        if (line.trim()) {
+          try {
+            const bytes = CryptoJS.AES.decrypt(line.trim(), finalPassword);
+            const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+            result += decrypted + "\n\n";
+          } catch (e) {
+            result += "[Decryption Failed]\n\n";
+          }
+        }
+      }
+      document.getElementById('decryptedOutput').value = result.trim();
+    }
+
+    function copyToClipboard() {
+      const encrypted = document.getElementById('encryptedText');
+      encrypted.select();
+      document.execCommand('copy');
+      alert("Encrypted text copied!");
+    }
+
+    function populateFieldsFromText() {
+      const text = document.getElementById('generatedText').value;
+      const parser = new DOMParser();
+      try {
+        const xml = parser.parseFromString(text, 'text/xml');
+        const getValue = tag => {
+          const el = xml.getElementsByTagName(tag)[0];
+          return el ? el.textContent : '';
+        };
+        document.getElementById('accountLabel').value = getValue('AccountLabel');
+        document.getElementById('username').value = getValue('Username');
+        document.getElementById('passwordInput').value = getValue('Password');
+        document.getElementById('passwordCode').value = getValue('PasswordCode');
+        document.getElementById('pin').value = getValue('PIN');
+        document.getElementById('email').value = getValue('Email');
+        document.getElementById('questionsContainer').innerHTML = '';
+        questionCount = 0;
+        for (let i = 1; i <= 99; i++) {
+          const q = getValue(`Question${i}`);
+          const a = getValue(`Answer${i}`);
+          if (!q && !a) continue;
+          addQuestion();
+          document.querySelectorAll('.question')[i - 1].value = q;
+          document.querySelectorAll('.answer')[i - 1].value = a;
+        }
+      } catch (e) {
+        alert("Failed to parse and populate fields. Please check the format.");
+      }
+    }
+
+    function copyDecToClipboard() {
+      const encrypted = document.getElementById('decryptedOutput');
+      encrypted.select();
+      document.execCommand('copy');
+      alert("Decrypted text copied!");
+    }
+
+    // Add initial 1 question
+    addQuestion();
+  </script>
+</body>
+</html>
