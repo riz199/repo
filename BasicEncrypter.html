@@ -6,100 +6,158 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+  <!link href="base.css" rel="stylesheet">
   <style>
-    /* Retriever Theme */
-    body {
-      font-family: 'Inter', Arial, sans-serif;
-      background-color: #f9fafb;
-      padding: 20px;
-      max-width: 900px;
-      margin: auto;
-    }
+  body {
+  font-family: 'Inter', Arial, sans-serif;
+  background-color: #f9fafb;
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+}
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-weight: 600;
-    }
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
 
-    label {
-      font-weight: 500;
-      margin-top: 10px;
-    }
+label {
+  font-weight: 500;
+  margin-top: 10px;
+}
 
-    textarea, input[type="password"], input[type="file"] {
-      width: 100%;
-      margin: 10px 0;
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      box-sizing: border-box;
-    }
 
-    button {
-      height: 42px;
-      font-size: 0.95rem;
-      padding: 0 15px;
-      border-radius: 6px;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      transition: background-color 0.2s ease-in-out;
-      white-space: nowrap;
-    }
+input[type="file"] {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  box-sizing: border-box;
+}
 
-    button:hover {
-      background-color: #0056b3;
-    }
+textarea, input[type="password"], input[type="text"] {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
 
-    button:active {
-      background-color: #004a99;
-    }
+button {
+  height: 42px;
+  font-size: 0.95rem;
+  padding: 0 15px;
+  border-radius: 6px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  transition: background-color 0.2s ease-in-out;
+  white-space: nowrap;
+}
 
-    /* Layout alignment */
-    .btn-group-custom {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-    }
+button:hover { background-color: #0056b3; }
+button:active { background-color: #004a99; }
 
-    /* Ensure text fits even on smallest screens */
-    @media (max-width: 420px) {
-      button {
-        font-size: 0.8rem;
-        padding: 0 10px;
-        height: 40px;
-      }
+.btn-group-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
 
-      textarea {
-        font-size: 0.85rem;
-      }
-    }
+.small-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
-    @media (max-width: 340px) {
-      button {
-        font-size: 0.75rem;
-        height: 38px;
-      }
-    }
+@media (max-width: 420px) {
+  button { font-size: 0.8rem; padding: 0 10px; height: 40px; }
+  textarea { font-size: 0.85rem; }
+}
+
+@media (max-width: 340px) {
+  button { font-size: 0.75rem; height: 38px; }
+}
+
+/* Toast Notifications */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999; /* very high to be on top */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none; /* clicks pass through container */
+  width: auto;
+  max-width: 90%; /* responsive width */
+  align-items: center;
+}
+
+.toast {
+  background-color: #333;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  min-width: 200px;
+  max-width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-size: 0.9rem;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto; /* allow interaction with toast itself */
+  word-wrap: break-word;
+}
+
+.toast.show {
+  opacity: 0.95;
+  transform: translateY(0);
+}
+
+.toast-success { background-color: #28a745; }
+.toast-error { background-color: #dc3545; }
+.toast-info { background-color: #17a2b8; }
+
+/* Extra responsiveness for very small devices */
+@media (max-width: 360px) {
+  .toast {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+    min-width: 150px;
+  }
+}
+
   </style>
 </head>
 
 <body>
-  <h2>🔐 AES Text Encryptor / Decryptor</h2>
+  <h2>🔐 AES Text Encryptor / Decryptor (OpenSSL-compatible)</h2>
 
   <label>Upload .txt File:</label>
-  <input type="file" id="fileInput" accept=".txt"><br>
+  <input type="file" id="fileInput" accept=".txt" class="form-control"><br>
 
-  <label>Original Text:</label>
+  <label>Original Text (paste encrypted Base64 or plaintext):</label>
   <textarea id="originalText" rows="10" placeholder="File content here..."></textarea>
 
   <label>Password:</label>
   <input type="password" id="password" placeholder="Enter password">
+
+  <div class="small-row">
+    <label style="margin:0;"><input type="checkbox" id="applyPrefix" checked> Apply PREFIX/SUFFIX</label>
+    <span style="color:#666; font-size:0.9rem;">(checked = same behavior as before)</span>
+  </div>
 
   <div class="btn-group-custom">
     <button onclick="encryptText()">Encrypt</button>
@@ -109,78 +167,15 @@
   <label>Result:</label>
   <textarea id="resultText" rows="10" placeholder="Encrypted/Decrypted text..."></textarea><br>
 
+  <input type="text" id="downloadFilename" placeholder="Enter filename (optional)" style="width:100%; margin:10px 0; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:0.95rem; box-sizing:border-box;">
+
   <div class="btn-group-custom">
     <button onclick="saveFile()">💾 Save Result</button>
     <button onclick="copyResult()">📋 Copy Result</button>
   </div>
 
-  <script>
-    const fileInput = document.getElementById('fileInput');
-    const originalText = document.getElementById('originalText');
-    const resultText = document.getElementById('resultText');
-    const password = document.getElementById('password');
+  <div id="toastContainer"></div>
 
-    const PREFIX = "!@#$%^&*()_+ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
-    const SUFFIX = "+_)(*&^%$ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
-
-    // Read uploaded file
-    fileInput.addEventListener('change', function () {
-      const file = fileInput.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          originalText.value = e.target.result;
-        };
-        reader.readAsText(file);
-      }
-    });
-
-    function encryptText() {
-      const text = originalText.value;
-      const pass = password.value;
-      if (!text || !pass) return alert("Please enter both text and password.");
-
-      const finalPassword = PREFIX + pass + SUFFIX;
-      const encrypted = CryptoJS.AES.encrypt(text, finalPassword).toString();
-      resultText.value = encrypted;
-    }
-
-    function decryptText() {
-      const encryptedText = originalText.value.trim();
-      const pass = password.value;
-      if (!encryptedText || !pass) return alert("Please enter both encrypted text and password.");
-
-      const finalPassword = PREFIX + pass + SUFFIX;
-
-      try {
-        const lines = encryptedText.split('\n').filter(line => line.trim() !== '');
-        const decryptedLines = lines.map(line => {
-          const bytes = CryptoJS.AES.decrypt(line.trim(), finalPassword);
-          const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-          if (!decrypted) throw new Error("Decryption failed for a line");
-          return decrypted;
-        });
-        resultText.value = decryptedLines.join('\n');
-      } catch (e) {
-        alert("Invalid password or corrupted data.");
-      }
-    }
-
-    function saveFile() {
-      const blob = new Blob([resultText.value], { type: "text/plain;charset=utf-8" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "output.txt";
-      link.click();
-    }
-
-    function copyResult() {
-      const text = resultText.value;
-      if (!text) return alert("Nothing to copy.");
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Result copied to clipboard!"))
-        .catch(() => alert("Copy failed."));
-    }
-  </script>
+  <script src="base.js"></script>
 </body>
 </html>
