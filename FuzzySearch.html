@@ -326,6 +326,25 @@
   }
 }
 
+#decomWrapper {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+#decomWrapper .form-check-input {
+  height: 34px;
+  width: 60px;
+  margin-top: 0;
+}
+
+#decomWrapper .form-check-label {
+  margin-left: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -353,6 +372,10 @@
   <input type="password" id="aesPassword" placeholder="Enter AES password" class="form-control">
   <button id="loadEncryptedBtn" onclick="loadEncryptedData()">🔓 Load Encrypted Data</button>
   <button id="resetBtn" onclick="resetAll()" style="display:none;background-color:#dc3545;color:white;">🔄 Reset</button>
+  <div class="form-check form-switch" id="decomWrapper" style="display:none; margin-left:10px;">
+    <input class="form-check-input" type="checkbox" id="decomCheckbox">
+    <label class="form-check-label" for="decomCheckbox">Decom</label>
+  </div>
 </div>
 
   <hr>
@@ -426,120 +449,7 @@ async function loadRemoteContent(url) {
   }
 }
 
-// === Main Decryption Logic (delegates to base.js) ===
-async function loadEncryptedData() {
-  const rawPass = document.getElementById('aesPassword').value.trim();
-  if (!rawPass) { showToast("Enter AES password.", "error"); return; }
 
-  const loadBtn = document.getElementById('loadEncryptedBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  let content = encryptedContent;
-
-  const linkInputField = document.getElementById('linkInput');
-  const linkInput = linkInputField.value.trim();
-  const selector = document.getElementById('encryptedLinkSelector').value.trim();
-  const fileInput = document.getElementById('fileInput');
-
-  if (!content) {
-    let finalLink = null;
-    if (linkInput) {
-      finalLink = linkInput;
-    } else if (selector && ENCRYPTED_LINKS[selector]) {
-      try {
-        const decryptedLink = base.decryptText(ENCRYPTED_LINKS[selector], rawPass, true);
-        if (!decryptedLink) throw new Error("Invalid password or link.");
-        finalLink = decryptedLink;
-      } catch {
-        showToast("Invalid password or link.", "error");
-        return;
-      }
-    } else {
-      finalLink = HARDCODED_FALLBACK_LINK;
-    }
-
-    content = await loadRemoteContent(finalLink);
-    if (!content) return;
-  }
-
-  try {
-    decryptedBlocks = [];
-
-    const base64Matches = [...content.matchAll(/U2FsdGVkX1[\s\S]+?(?=U2FsdGVkX1|$)/g)];
-    if (!base64Matches.length) {
-      showToast("No valid Base64 blocks found.", "error");
-      return;
-    }
-
-    let blockCount = 0;
-    let entryCount = 0;
-
-    for (const match of base64Matches) {
-      const block = match[0].replace(/\s+/g, '');
-      let dec = '';
-      try {
-        dec = base.decryptText(block, rawPass, true);
-        if (!dec || !dec.trim()) continue;
-      } catch {
-        console.warn("Failed to decrypt a block, skipping.");
-        continue;
-      }
-
-      blockCount++;
-
-      const entries = dec
-        .split(/<ACTDET>/i)
-        .map(x => x.trim())
-        .filter(x => x)
-        .map(x => "<ACTDET>" + x);
-
-      decryptedBlocks.push(...entries);
-      entryCount += entries.length;
-    }
-
-    if (!decryptedBlocks.length) {
-      showToast("Decryption failed — no valid entries.", "error");
-      return;
-    }
-
-    showToast(`Success: ${blockCount} Blocks and ${entryCount} entries`, "success");
-
-    // Reset UI
-    document.getElementById('searchInput').value = '';
-    document.getElementById('searchResults').innerHTML = '';
-    const area = document.getElementById('allDecrypted');
-    area.style.display = 'none';
-    area.value = '';
-    document.getElementById('textarea1-buttons').style.display = 'none';
-    document.getElementById('encryptedOutput').style.display = 'none';
-    document.getElementById('textarea2-buttons').style.display = 'none';
-
-    // ✅ Clear password, link, and file input
-    document.getElementById('aesPassword').value = '';
-    linkInputField.value = '';
-    document.getElementById('encryptedLinkSelector').value = '';
-    fileInput.value = '';
-    encryptedContent = '';
-
-    // ✅ Load button success state
-    loadBtn.style.backgroundColor = '#28a745';
-    loadBtn.style.color = 'white';
-    loadBtn.textContent = "✅ Loaded";
-    loadBtn.disabled = true;
-
-    // ✅ Show Reset button
-    resetBtn.style.display = 'inline-block';
-
-  } catch (err) {
-    console.error("Decryption failed:", err);
-    showToast("Decryption failed.", "error");
-    decryptedBlocks = [];
-    loadBtn.style.backgroundColor = '#007bff';
-    loadBtn.style.color = 'white';
-    loadBtn.textContent = "🔓 Load Encrypted Data";
-    loadBtn.disabled = false;
-    resetBtn.style.display = 'none';
-  }
-}
 
 // --- Reset all page content ---
 function resetAll() {
@@ -576,7 +486,12 @@ function resetAll() {
   // Hide Reset button
   const resetBtn = document.getElementById('resetBtn');
   resetBtn.style.display = 'none';
+  
+  document.getElementById('decomCheckbox').checked = false;
+  document.getElementById('decomWrapper').style.display = 'none';
 }
+
+
 
 
 
@@ -586,12 +501,124 @@ function normalizeText(str) {
   return str.toLowerCase().replace(/[^a-z0-9 ]+/g,'').trim().split(/\s+/);
 }
 
+// === Load and Decrypt Encrypted Data ===
+async function loadEncryptedData() {
+  const rawPass = document.getElementById('aesPassword').value.trim();
+  if (!rawPass) { showToast("Enter AES password.", "error"); return; }
+
+  const loadBtn = document.getElementById('loadEncryptedBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let content = encryptedContent;
+
+  const linkInputField = document.getElementById('linkInput');
+  const linkInput = linkInputField.value.trim();
+  const selector = document.getElementById('encryptedLinkSelector').value.trim();
+  const fileInput = document.getElementById('fileInput');
+
+  if (!content) {
+    let finalLink = null;
+    if (linkInput) {
+      finalLink = linkInput;
+    } else if (selector && ENCRYPTED_LINKS[selector]) {
+      try {
+        const decryptedLink = base.decryptText(ENCRYPTED_LINKS[selector], rawPass, true);
+        if (!decryptedLink) throw new Error("Invalid password or link.");
+        finalLink = decryptedLink;
+      } catch {
+        showToast("Invalid password or link.", "error");
+        return;
+      }
+    } else {
+      finalLink = HARDCODED_FALLBACK_LINK;
+    }
+
+    content = await loadRemoteContent(finalLink);
+    if (!content) return;
+  }
+
+  try {
+    decryptedBlocks = []; // clear previous
+
+    const base64Matches = [...content.matchAll(/U2FsdGVkX1[\s\S]+?(?=U2FsdGVkX1|$)/g)];
+    if (!base64Matches.length) { showToast("No valid Base64 blocks found.", "error"); return; }
+
+    let blockCount = 0, entryCount = 0;
+
+    for (const match of base64Matches) {
+      const block = match[0].replace(/\s+/g, '');
+      let dec = '';
+      try { dec = base.decryptText(block, rawPass, true); if (!dec || !dec.trim()) continue; }
+      catch { continue; }
+
+      blockCount++;
+
+      // Split each <ACTDET> into tags
+      const actMatches = [...dec.matchAll(/<ACTDET>([\s\S]*?)<\/ACTDET>/gi)];
+      actMatches.forEach(act => {
+        const inner = act[1].trim();
+        const tags = [...inner.matchAll(/<([^\/][^>]+)>([\s\S]*?)<\/\1>/g)];
+        tags.forEach(tag => {
+          decryptedBlocks.push({
+            tagName: tag[1].trim().toLowerCase(),
+            tagContent: tag[2].trim()
+          });
+          entryCount++;
+        });
+      });
+    }
+
+    if (!decryptedBlocks.length) {
+      showToast("Decryption failed — no valid entries.", "error");
+      return;
+    }
+
+    showToast(`Success: ${blockCount} Blocks and ${entryCount} entries`, "success");
+
+    // Reset UI
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('allDecrypted').style.display = 'none';
+    document.getElementById('allDecrypted').value = '';
+    document.getElementById('textarea1-buttons').style.display = 'none';
+    document.getElementById('encryptedOutput').style.display = 'none';
+    document.getElementById('textarea2-buttons').style.display = 'none';
+
+    // Clear inputs
+    document.getElementById('aesPassword').value = '';
+    linkInputField.value = '';
+    document.getElementById('encryptedLinkSelector').value = '';
+    fileInput.value = '';
+    encryptedContent = '';
+
+    // Load button success state
+    loadBtn.style.backgroundColor = '#28a745';
+    loadBtn.style.color = 'white';
+    loadBtn.textContent = "✅ Loaded";
+    loadBtn.disabled = true;
+
+    resetBtn.style.display = 'inline-block';
+    document.getElementById('decomWrapper').style.display = 'inline-flex';
+
+  } catch (err) {
+    console.error("Decryption failed:", err);
+    showToast("Decryption failed.", "error");
+    decryptedBlocks = [];
+    loadBtn.style.backgroundColor = '#007bff';
+    loadBtn.style.color = 'white';
+    loadBtn.textContent = "🔓 Load Encrypted Data";
+    loadBtn.disabled = false;
+    resetBtn.style.display = 'none';
+  }
+}
+
+// === Fuzzy Search ===
 function handleSearch() {
+  const includeDecom = document.getElementById('decomCheckbox').checked;
   const qRaw = document.getElementById('searchInput').value.trim();
   const resultsDiv = document.getElementById('searchResults');
   resultsDiv.innerHTML = '';
 
-  // Hide the "Retrieve All" textarea when typing in search
   const area = document.getElementById('allDecrypted');
   area.style.display = 'none';
   area.value = '';
@@ -600,59 +627,61 @@ function handleSearch() {
   const q = qRaw.toLowerCase().trim().split(/\s+/).filter(x => x);
   if (!q.length) return;
 
-  decryptedBlocks.forEach(block => {
-    const m = block.match(/<AccountLabel>(.*?)<\/AccountLabel>/i);
-    if (!m) return;
-    const labelWords = m[1].toLowerCase().replace(/[^a-z0-9 ]+/g,'').trim().split(/\s+/);
-    if (!q.every(term => labelWords.some(w => w.includes(term)))) return;
+  decryptedBlocks.forEach(item => {
+    // Skip decom blocks if checkbox off
+    if (!includeDecom && /decom/i.test(item.tagContent)) return;
 
-const cont = document.createElement('div');
-cont.className = 'result-card';
+    const labelMatch = item.tagName === 'accountlabel' ? item.tagContent : '';
+    if (q.length && labelMatch && !q.every(term => labelMatch.toLowerCase().includes(term))) return;
 
-const header = document.createElement('h5');
-header.innerText = m[1];
-cont.appendChild(header);
+    const cont = document.createElement('div');
+    cont.className = 'result-field';
 
-[...block.matchAll(/<([^\/][^>]+)>(.*?)<\/\1>/g)].forEach(f => {
-  if (f[1] === 'AccountLabel') return;
+    let field;
+    if (item.tagName === 'password') {
+      field = document.createElement('input');
+      field.type = 'text';
+      field.readOnly = true;
+      field.value = '********';
+      field.dataset.realValue = item.tagContent;
+    } else if (item.tagName === 'freearea') {
+      field = document.createElement('textarea');
+      field.readOnly = true;
+      field.value = item.tagContent;
+      field.style.width = '100%';
+      field.style.minHeight = '80px';
+      field.style.resize = 'vertical';
+      field.style.fontSize = '0.85rem';
+      field.style.padding = '4px';
+      field.style.borderRadius = '4px';
+      field.style.border = '1px solid #ccc';
+      field.style.backgroundColor = '#f8f9fa';
+    } else {
+      field = document.createElement('input');
+      field.type = 'text';
+      field.readOnly = true;
+      field.value = item.tagContent;
+    }
 
-  const fieldDiv = document.createElement('div');
-  fieldDiv.className = 'result-field';
+    const label = document.createElement('small');
+    label.textContent = item.tagName + ':';
+    label.style.fontWeight = '600';
+    label.style.marginRight = '8px';
+    label.style.flexShrink = '0';
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.readOnly = true;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-outline-secondary btn-sm';
+    btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+    btn.onclick = () => {
+      const copyText = field.dataset?.realValue || item.tagContent;
+      navigator.clipboard.writeText(copyText);
+      showToast("Copied to clipboard.", "success");
+    };
 
-  if (f[1].trim().toLowerCase() === 'password') {
-    input.value = '********';
-    input.dataset.realValue = f[2];
-  } else {
-    input.value = f[2];
-  }
-
-  const btn = document.createElement('button');
-  btn.className = 'btn btn-outline-secondary btn-sm';
-  btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
-  btn.onclick = () => {
-    const copyText = input.dataset.realValue || f[2];
-    navigator.clipboard.writeText(copyText);
-    showToast("Copied to clipboard.", "success");
-  };
-
-  const label = document.createElement('small');
-  label.textContent = f[1] + ':';
-  label.style.fontWeight = '600';
-  label.style.marginRight = '8px';
-  label.style.flexShrink = '0';
-
-  fieldDiv.prepend(label);
-  fieldDiv.appendChild(input);
-  fieldDiv.appendChild(btn);
-  cont.appendChild(fieldDiv);
-});
-
-resultsDiv.appendChild(cont);
-
+    cont.appendChild(label);
+    cont.appendChild(field);
+    cont.appendChild(btn);
+    resultsDiv.appendChild(cont);
   });
 }
 
@@ -660,11 +689,70 @@ resultsDiv.appendChild(cont);
 function retrieveAll() {
   document.getElementById('searchInput').value = '';
   document.getElementById('searchResults').innerHTML = '';
-  const area = document.getElementById('allDecrypted');
-  area.style.display = 'block';
-  area.value = decryptedBlocks.join('\n\n');
+  const resultsDiv = document.getElementById('searchResults');
 
+  decryptedBlocks.forEach(item => {
+    const cont = document.createElement('div');
+    cont.className = 'result-field';
+
+    let field;
+    if (item.tagName === 'password') {
+      field = document.createElement('input');
+      field.type = 'text';
+      field.readOnly = true;
+      field.value = '********';
+      field.dataset.realValue = item.tagContent;
+    } else if (item.tagName === 'freearea') {
+      field = document.createElement('textarea');
+      field.readOnly = true;
+      field.value = item.tagContent;
+      field.style.width = '100%';
+      field.style.minHeight = '80px';
+      field.style.resize = 'vertical';
+      field.style.fontSize = '0.85rem';
+      field.style.padding = '4px';
+      field.style.borderRadius = '4px';
+      field.style.border = '1px solid #ccc';
+      field.style.backgroundColor = '#f8f9fa';
+    } else {
+      field = document.createElement('input');
+      field.type = 'text';
+      field.readOnly = true;
+      field.value = item.tagContent;
+    }
+
+    const label = document.createElement('small');
+    label.textContent = item.tagName + ':';
+    label.style.fontWeight = '600';
+    label.style.marginRight = '8px';
+    label.style.flexShrink = '0';
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-outline-secondary btn-sm';
+    btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+    btn.onclick = () => {
+      const copyText = field.dataset?.realValue || item.tagContent;
+      navigator.clipboard.writeText(copyText);
+      showToast("Copied to clipboard.", "success");
+    };
+
+    cont.appendChild(label);
+    cont.appendChild(field);
+    cont.appendChild(btn);
+    resultsDiv.appendChild(cont);
+  });
+
+  // Show the action buttons for "allDecrypted" textarea
+  document.getElementById('allDecrypted').style.display = 'none';
   document.getElementById('textarea1-buttons').style.display = 'flex';
+  document.getElementById('encryptedOutput').style.display = 'none';
+  document.getElementById('textarea2-buttons').style.display = 'none';
+}
+
+  // hide old single textarea
+  document.getElementById('allDecrypted').style.display = 'none';
+  document.getElementById('allDecrypted').value = '';
+  document.getElementById('textarea1-buttons').style.display = 'none';
   document.getElementById('encryptedOutput').style.display = 'none';
   document.getElementById('textarea2-buttons').style.display = 'none';
 }
