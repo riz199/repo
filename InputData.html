@@ -29,6 +29,11 @@ label {
   line-height:1.2;
 }
 
+/* Add spacing above FreeArea label */
+label[for="freeArea"], label + #freeArea {
+  margin-top: 12px !important;
+}
+
 textarea, input[type="text"], input[type="password"] { 
   width:100%; 
   margin:2px 0 4px 0; 
@@ -122,6 +127,34 @@ button:active {
   margin-bottom:2px; 
   flex-wrap:wrap; 
 }
+
+.two-col {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.col-half {
+  flex: 1 1 48%;
+  min-width: 140px;
+}
+.col-half input {
+  width: 100%;
+}
+
+.three-col {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.col-third {
+  flex: 1 1 32%;
+  min-width: 120px;
+}
+.col-third input {
+  width: 100%;
+}
+
+
 </style>
 
 </head>
@@ -130,8 +163,38 @@ button:active {
 
   <!-- Account XML Inputs at the Top -->
   <!--h4>Account XML Fields</h4-->
+<div class="three-col">
+  <div class="col-third">
+    <label>Owner:</label>
+ <input type="text" id="owner" list="ownerHints" placeholder="Select or type Owner">
+  <datalist id="ownerHints">
+    <option value="Owner1">
+    <option value="Owner2">
+    <option value="Owner3">
+  </datalist>
+  </div>
+  <div class="col-third">
+    <label>Category:</label>
+<input type="text" id="category" list="categoryHints" placeholder="Select or type Category">
+  <datalist id="categoryHints">
+    <option value="Category1">
+    <option value="Category2">
+    <option value="Category3">
+  </datalist>
+  </div>
+  <div class="col-third">
+    <label>Serial:</label>
+    <input type="text" id="serial">
+  </div>
+</div>
+
 <label>Account Label:</label>
-<input type="text" id="accountLabel">
+<input type="text" id="accountLabel" required placeholder="Enter Account Label">
+
+<label>Link:</label>
+<input type="text" id="link" placeholder="Enter Link">
+
+
 
 <label>Username:</label>
 <input type="text" id="username">
@@ -148,15 +211,12 @@ button:active {
 <label>Email Address:</label>
 <input type="text" id="email">
 
-<label>Serial:</label>
-<input type="text" id="serial">
-
-<label>FreeArea:</label>
-<textarea id="freeArea" rows="5"></textarea>
-
-
+<label>Additional Questions:</label>
   <div id="questionsContainer"></div>
   <button onclick="addQuestion()">+Add Additional Question</button>
+  
+<label for="freeArea">FreeArea:</label>
+<textarea id="freeArea" rows="5"></textarea>
 
   <div class="btn-group-custom">
     <button onclick="generateXML()">Generate XML</button>
@@ -168,6 +228,8 @@ button:active {
 
   <label>Original Text (paste encrypted Base64 or plaintext):</label>
   <textarea id="originalText" rows="10"></textarea>
+  <div id="originalTextCount" style="font-size:0.85rem; color:#555; margin-bottom:8px;">0 characters</div>
+
 
   <label>Password:</label>
   <input type="password" id="password">
@@ -183,6 +245,8 @@ button:active {
 
   <label>Result:</label>
   <textarea id="resultText" rows="10"></textarea>
+  <div id="resultTextCount" style="font-size:0.85rem; color:#555; margin-bottom:8px;">0 characters</div>
+
 
   <input type="text" id="downloadFilename" placeholder="Enter filename (optional)" style="width:100%; margin:10px 0; padding:10px 12px; border:1px solid #ddd; border-radius:6px;">
 
@@ -214,67 +278,130 @@ button:active {
     addQuestion(); // init first question
 
     // Generate XML
-    function generateXML() {
-      let output = '<ACTDET>\n';
-const fields = [
-  { tag: 'AccountLabel', value: document.getElementById('accountLabel').value },
-  { tag: 'Username', value: document.getElementById('username').value },
-  { tag: 'Password', value: document.getElementById('passwordInput').value },
-  { tag: 'PasswordCode', value: document.getElementById('passwordCode').value },
-  { tag: 'PIN', value: document.getElementById('pin').value },
-  { tag: 'Email', value: document.getElementById('email').value },
-  { tag: 'Serial', value: document.getElementById('serial').value },
-  { tag: 'FreeArea', value: document.getElementById('freeArea').value },
-];
+// Generate XML
+function generateXML() {
+  const accountLabel = document.getElementById('accountLabel').value.trim();
+  if (!accountLabel) {
+    showToast('Account Label is required!', 'error');
+    document.getElementById('accountLabel').focus();
+    return;
+  }
 
-      fields.forEach(f => { if(f.value.trim()) output += `  <${f.tag}>${f.value.trim()}</${f.tag}>\n`; });
+  let output = '<ACTDET>\n';
+  const fields = [
+    { tag: 'Owner', value: document.getElementById('owner').value },
+    { tag: 'Category', value: document.getElementById('category').value },
+    { tag: 'Serial', value: document.getElementById('serial').value },
+    { tag: 'AccountLabel', value: accountLabel },
+	{ tag: 'Link', value: document.getElementById('link').value },
+    { tag: 'Username', value: document.getElementById('username').value },
+    { tag: 'Password', value: document.getElementById('passwordInput').value },
+    { tag: 'PasswordCode', value: document.getElementById('passwordCode').value },
+    { tag: 'PIN', value: document.getElementById('pin').value },
+    { tag: 'Email', value: document.getElementById('email').value }
+  ];
 
-      const questions = document.querySelectorAll('.question');
-      const answers = document.querySelectorAll('.answer');
-      for(let i=0;i<questions.length;i++){
-        const q = questions[i].value.trim();
-        const a = answers[i].value.trim();
-        if(q && a){
-          output += `  <Question${i+1}>${q}</Question${i+1}>\n`;
-          output += `  <Answer${i+1}>${a}</Answer${i+1}>\n`;
-        }
-      }
-      output += '</ACTDET>';
-document.getElementById('originalText').value = output;
+  // Add main fields
+  fields.forEach(f => { 
+    if (f.value.trim()) output += `  <${f.tag}>${f.value.trim()}</${f.tag}>\n`; 
+  });
+
+  // Add all question/answer pairs
+  const questions = document.querySelectorAll('.question');
+  const answers = document.querySelectorAll('.answer');
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i].value.trim();
+    const a = answers[i].value.trim();
+    if (q && a) {
+      output += `  <Question${i+1}>${q}</Question${i+1}>\n`;
+      output += `  <Answer${i+1}>${a}</Answer${i+1}>\n`;
     }
+  }
+
+  // Add FreeArea LAST
+  const freeArea = document.getElementById('freeArea').value.trim();
+  if (freeArea) output += `  <FreeArea>${freeArea}</FreeArea>\n`;
+
+  output += '</ACTDET>';
+  document.getElementById('originalText').value = output;
+  updateCharCount('originalText', 'originalTextCount');
+  showToast('XML generated successfully!', 'success');
+}
+
+
 
     // Populate from XML
-    function populateFromXML(){
-      const text = document.getElementById('originalText').value;
-      const parser = new DOMParser();
-      try{
-        const xml = parser.parseFromString(text,'text/xml');
-        const getValue = tag => { const el = xml.getElementsByTagName(tag)[0]; return el ? el.textContent : ''; };
-document.getElementById('accountLabel').value = getValue('AccountLabel');
-document.getElementById('username').value = getValue('Username');
-document.getElementById('passwordInput').value = getValue('Password');
-document.getElementById('passwordCode').value = getValue('PasswordCode');
-document.getElementById('pin').value = getValue('PIN');
-document.getElementById('email').value = getValue('Email');
-document.getElementById('serial').value = getValue('Serial') || new Date().toISOString().slice(0,10);
-document.getElementById('freeArea').value = getValue('FreeArea');
+ function populateFromXML() {
+    const text = document.getElementById('originalText').value;
 
-        // clear old questions
-        const container = document.getElementById('questionsContainer');
-        container.innerHTML = '';
-        questionCount = 0;
-        for(let i=1;i<=99;i++){
-          const q = getValue(`Question${i}`);
-          const a = getValue(`Answer${i}`);
-          if(!q && !a) continue;
-          addQuestion();
-          document.querySelectorAll('.question')[i-1].value = q;
-          document.querySelectorAll('.answer')[i-1].value = a;
-        }
-      } catch(e){
-        alert("Invalid XML format");
-      }
+    // Helper to extract content between <tag>...</tag> literally
+    const getValue = tag => {
+        const regex = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, 'i');
+        const match = text.match(regex);
+        return match ? match[1].trim() : '';
+    };
+
+    // Populate main fields
+    document.getElementById('owner').value = getValue('Owner');
+    document.getElementById('category').value = getValue('Category');
+    document.getElementById('serial').value = getValue('Serial') || new Date().toISOString().slice(0,10);
+    document.getElementById('accountLabel').value = getValue('AccountLabel');
+	document.getElementById('link').value = getValue('Link');
+    document.getElementById('username').value = getValue('Username');
+    document.getElementById('passwordInput').value = getValue('Password');
+    document.getElementById('passwordCode').value = getValue('PasswordCode');
+    document.getElementById('pin').value = getValue('PIN');
+    document.getElementById('email').value = getValue('Email');
+    document.getElementById('freeArea').value = getValue('FreeArea');
+
+    // Clear old questions
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    questionCount = 0;
+
+    // Populate additional questions (up to 99)
+    for (let i = 1; i <= 99; i++) {
+        const q = getValue(`Question${i}`);
+        const a = getValue(`Answer${i}`);
+        if (!q && !a) continue;
+        addQuestion();
+        document.querySelectorAll('.question')[i - 1].value = q;
+        document.querySelectorAll('.answer')[i - 1].value = a;
     }
+}
+
+
+// Function to update character count
+function updateCharCount(textareaId, countId) {
+    const textarea = document.getElementById(textareaId);
+    const counter = document.getElementById(countId);
+    counter.textContent = `${textarea.value.length} characters`;
+}
+
+// Initialize and bind events
+['originalText', 'resultText'].forEach(id => {
+    const countId = id + 'Count';
+    const textarea = document.getElementById(id);
+    // initial count
+    updateCharCount(id, countId);
+    // update on input
+    textarea.addEventListener('input', () => updateCharCount(id, countId));
+});
+
+// ✅ Observe programmatic changes to resultText
+const resultText = document.getElementById('resultText');
+const observer = new MutationObserver(() => updateCharCount('resultText', 'resultTextCount'));
+observer.observe(resultText, { attributes: true, attributeFilter: ['value'] });
+
+// Fallback interval for programmatic .value changes (cross-browser safe)
+let lastVal = resultText.value;
+setInterval(() => {
+    if (resultText.value !== lastVal) {
+        lastVal = resultText.value;
+        updateCharCount('resultText', 'resultTextCount');
+    }
+}, 200);
+
   </script>
 </body>
 </html>
