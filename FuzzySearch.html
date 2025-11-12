@@ -427,8 +427,8 @@
   </style>
 
 <script>
-const ENCRYPTED_PREFIX = "U2FsdGVkX1/6KAJesc0bpL8ZJ7Ijm+G+TPWYx/Wo12wK/C2TBIaRmWAg8G88DJKVPiqK6A6BjTXYu0PFF11GlruhSXHaF4srpe9S+PeMosw=";
-const ENCRYPTED_POSTFIX = "U2FsdGVkX18FtSn28eGP4vA91jVVerTdVdiEidk9bNS8XILpqSf1lRbaHQc9oTcj5xuGbO6kpvIrWCPG1r6rKJ0kAvut+c3IowDW6PXBF/g=";
+const ENCRYPTED_PREFIX = "U2FsdGVkX19wdrvjEXVDQX3H/+KTzTDOLKGhFJXzCyJO2autIvi1CIRnXdzEPHbezbzcxy5No3xcMUzabtJB3fQz1YF8BxfQQjEZPi2UoZg=";
+const ENCRYPTED_POSTFIX = "U2FsdGVkX1/WmMFyo04aeF4q6YEXcTWamEPconzbNG7p2f7/FHdmPmQEYeGHV1oUbEFwkwMcoS9mY7fhurxbwbWy14iEqj7epaCDjmeiAoA=";
 </script>
 
 
@@ -910,6 +910,10 @@ const pinInput = document.getElementById('pinInput');
 const pinSubmit = document.getElementById('pinSubmit');
 const pinError = document.getElementById('pinError');
 
+// ✅ New hardcoded PIN security values
+const PINPREFIX = "ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";   // exposed in code
+const PINPOSTFIX = "ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚"; // exposed in code
+
 // blur page until PIN entered
 document.body.classList.add('blur');
 pinInput.focus();
@@ -922,9 +926,12 @@ pinInput.addEventListener('keyup', function(e){
 function unlockWithPIN() {
     const pin = pinInput.value.trim();
     try {
-        // decrypt prefix/postfix with base.js decryptText
-        PREFIXS = base.decryptText(ENCRYPTED_PREFIX, pin);
-        POSTFIXS = base.decryptText(ENCRYPTED_POSTFIX, pin);
+        // Combine PIN with dedicated PINPREFIX & PINPOSTFIX
+        const combinedPIN = PINPREFIX + pin + PINPOSTFIX;
+
+        // Use combinedPIN to decrypt ENCRYPTED_PREFIX and ENCRYPTED_POSTFIX
+        PREFIXS = base.decryptText(ENCRYPTED_PREFIX, combinedPIN);
+        POSTFIXS = base.decryptText(ENCRYPTED_POSTFIX, combinedPIN);
 
         // hide modal & remove blur
         pinModal.style.display = 'none';
