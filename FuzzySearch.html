@@ -360,12 +360,96 @@
 }
 
 
+/* Modern minimal PIN modal */
+.pin-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); /* dimmed background */
+  backdrop-filter: blur(6px);  /* modern blur */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.pin-modal-content {
+  background: #fff;
+  color: #111;
+  padding: 30px 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  min-width: 280px;
+  max-width: 90%;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.pin-modal-content h2 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.pin-modal-content input {
+  font-size: 1.1rem;
+  padding: 10px 12px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.pin-modal-content button {
+  padding: 10px 16px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  transition: background-color 0.2s ease;
+}
+
+.pin-modal-content button:hover {
+  background-color: #0056b3;
+}
+
+#pinError {
+  color: #dc3545;
+  margin-top: 8px;
+  font-size: 0.875rem;
+  display: none;
+}
+
+
   </style>
 
+<script>
+const ENCRYPTED_PREFIX = "U2FsdGVkX1/6KAJesc0bpL8ZJ7Ijm+G+TPWYx/Wo12wK/C2TBIaRmWAg8G88DJKVPiqK6A6BjTXYu0PFF11GlruhSXHaF4srpe9S+PeMosw=";
+const ENCRYPTED_POSTFIX = "U2FsdGVkX18FtSn28eGP4vA91jVVerTdVdiEidk9bNS8XILpqSf1lRbaHQc9oTcj5xuGbO6kpvIrWCPG1r6rKJ0kAvut+c3IowDW6PXBF/g=";
+</script>
+
+
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
 </head>
 
 <body>
+<!-- PIN Modal -->
+<div id="pinModal" class="pin-modal">
+  <div class="pin-modal-content">
+    <h2>Enter PIN</h2>
+    <input type="password" id="pinInput" placeholder="PIN" maxlength="10">
+    <button id="pinSubmit">Unlock</button>
+    <div id="pinError">Incorrect PIN. Try again.</div>
+  </div>
+</div>
+
+
+
   <h2>Retriever</h2>
 
   <label>Upload File (.txt):</label>
@@ -466,8 +550,11 @@ async function loadRemoteContent(url) {
 
 // === Main Decryption Logic (delegates to base.js) ===
 async function loadEncryptedData() {
-  const rawPass = document.getElementById('aesPassword').value.trim();
-  if (!rawPass) { showToast("Enter AES password.", "error"); return; }
+  const aesPasswordInput = document.getElementById('aesPassword').value.trim();
+  if (!aesPasswordInput) { showToast("Enter AES password.", "error"); return; }
+
+  // Combine prefix + user password + postfix
+  const rawPass = PREFIXS + aesPasswordInput + POSTFIXS;
 
   const loadBtn = document.getElementById('loadEncryptedBtn');
   const resetBtn = document.getElementById('resetBtn');
@@ -816,6 +903,38 @@ document.getElementById('aesPassword').addEventListener('keypress', function(e) 
     document.getElementById('loadEncryptedBtn').click();
   }
 });
+
+// --- PIN Unlock ---
+const pinModal = document.getElementById('pinModal');
+const pinInput = document.getElementById('pinInput');
+const pinSubmit = document.getElementById('pinSubmit');
+const pinError = document.getElementById('pinError');
+
+// blur page until PIN entered
+document.body.classList.add('blur');
+pinInput.focus();
+
+pinSubmit.addEventListener('click', unlockWithPIN);
+pinInput.addEventListener('keyup', function(e){
+    if(e.key === 'Enter') unlockWithPIN();
+});
+
+function unlockWithPIN() {
+    const pin = pinInput.value.trim();
+    try {
+        // decrypt prefix/postfix with base.js decryptText
+        PREFIXS = base.decryptText(ENCRYPTED_PREFIX, pin);
+        POSTFIXS = base.decryptText(ENCRYPTED_POSTFIX, pin);
+
+        // hide modal & remove blur
+        pinModal.style.display = 'none';
+        document.body.classList.remove('blur');
+    } catch(err) {
+        pinError.style.display = 'block';
+        pinInput.value = '';
+        pinInput.focus();
+    }
+}
 
 
 </script>
