@@ -2,8 +2,9 @@ const PBKDF2_ITERATIONS = 10000;
 const KEY_BYTES = 32; 
 const IV_BYTES  = 16;
 const SALT_BYTES = 8; 
-const PREFIX = "!@#$%^&*()_+ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
-const SUFFIX = "+_)(*&^%$ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";
+const PREFIX = "";
+const SUFFIX = "";
+
 
 document.getElementById('fileInput').addEventListener('change', function (e) {
   const file = e.target.files[0];
@@ -179,3 +180,4 @@ const base = {
     return plaintext;
   }
 };
+
