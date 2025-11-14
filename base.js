@@ -181,3 +181,98 @@ const base = {
   }
 };
 
+// --- PIN modal reusable functions start here ---
+
+async function unlockWithPIN(pinInputId, keyInputId, modalId, errorId) {
+    const pinInput = document.getElementById(pinInputId);
+    const keyInputEl = document.getElementById(keyInputId);
+    const pinModal = document.getElementById(modalId);
+    const pinError = document.getElementById(errorId);
+
+    const pin = pinInput.value.trim();
+    const keyInput = keyInputEl.value.trim();
+
+    if (!keyInput) {
+        pinError.style.display = 'block';
+        pinError.textContent = "Enter key first.";
+        return;
+    }
+
+    try {
+        const combinedPIN = keyInput + pin + keyInput;
+        PREFIXS = base.decryptText(ENCRYPTED_PREFIX, combinedPIN);
+        POSTFIXS = base.decryptText(ENCRYPTED_POSTFIX, combinedPIN);
+
+        pinModal.style.display = 'none';
+        document.body.classList.remove('blur');
+    } catch(err) {
+        pinError.style.display = 'block';
+        pinError.textContent = "Incorrect PIN or key.";
+        pinInput.value = '';
+        pinInput.focus();
+    }
+}
+
+function setupPINModal({ pinInputId, keyInputId, modalId, pinSubmitId, errorId, autoUnlock = true }) {
+    const pinInput = document.getElementById(pinInputId);
+    const pinSubmit = document.getElementById(pinSubmitId);
+
+    document.body.classList.add('blur');
+    pinInput.focus();
+
+    pinSubmit.addEventListener('click', () => unlockWithPIN(pinInputId, keyInputId, modalId, errorId));
+    pinInput.addEventListener('keyup', function(e){
+        if (e.key === 'Enter') unlockWithPIN(pinInputId, keyInputId, modalId, errorId);
+    });
+
+    if (autoUnlock) {
+        // debounce timer
+        let timer;
+        pinInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                unlockWithPIN(pinInputId, keyInputId, modalId, errorId);
+            }, 300); // wait 300ms after typing stops
+        });
+    }
+}
+
+
+function setupUploadButton(buttonId, inputId) {
+    document.getElementById(buttonId).addEventListener('click', () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.txt';
+        fileInput.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                document.getElementById(inputId).value = evt.target.result.trim();
+            };
+            reader.readAsText(file);
+        };
+        fileInput.click();
+    });
+}
+
+function setupFetchButton(buttonId, inputId, showToast) {
+    document.getElementById(buttonId).addEventListener('click', async () => {
+        const inputValue = document.getElementById(inputId).value.trim();
+        if (!inputValue) {
+            showToast("Enter link first", "error");
+            return;
+        }
+        try {
+            const response = await fetch(inputValue);
+            if (!response.ok) throw new Error("Failed to link");
+            const content = await response.text();
+            document.getElementById(inputId).value = content.trim();
+            showToast("Fetched successfully.", "success");
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    });
+}
+// --- PIN modal reusable functions start here ---
+
