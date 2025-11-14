@@ -154,11 +154,172 @@ button:active {
   width: 100%;
 }
 
+/* MODAL CSS IF Removal is Needed */
+/* Modern minimal PIN modal */
+.pin-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 10px; /* ensure small screens have some padding */
+  box-sizing: border-box;
+}
+
+.pin-modal-content {
+  background: #fff;
+  color: #111;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  min-width: 260px;
+  max-width: 400px; /* prevent extreme width on large screens */
+  width: 100%;      /* responsive width */
+  box-sizing: border-box;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.pin-modal-content h2 {
+  margin-bottom: 12px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+/* Top buttons row */
+.pin-top-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.pin-top-buttons button {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-top-buttons button:hover {
+  background-color: #0056b3;
+}
+
+/* Inputs */
+.pin-modal-content input {
+  font-size: 1rem;
+  padding: 10px 12px;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  text-align: center;
+  background: #f8f9fa;
+  box-sizing: border-box;
+}
+
+/* Unlock button */
+.pin-modal-content button#pinSubmit {
+  padding: 10px 16px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.pin-modal-content button#pinSubmit:hover {
+  background-color: #0056b3;
+}
+
+/* Error message */
+#pinError {
+  color: #dc3545;
+  margin-top: 8px;
+  font-size: 0.875rem;
+  display: none;
+}
+
+/* Responsive tweaks for tiny screens */
+@media (max-width: 320px) {
+  .pin-modal-content {
+    padding: 20px 15px;   /* reduce padding */
+    min-width: auto;      /* allow shrinking below 280px */
+    width: 90%;           /* occupy almost full screen */
+  }
+
+  .pin-modal-content input,
+  .pin-modal-content button#pinSubmit {
+    font-size: 0.95rem;   /* slightly smaller text */
+    padding: 8px 10px;    /* smaller padding */
+  }
+
+  .pin-top-buttons button {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+}
+
+
+/* Unlock button */
+.pin-modal-content button#pinSubmit {
+  width: 100%;           /* make full width like input */
+  padding: 10px 16px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  transition: background-color 0.2s ease;
+
+  /* Fix text alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+/* MODAL CSS IF Removal is Needed */
 
 </style>
+	<script>
+	const ENCRYPTED_PREFIX = "U2FsdGVkX19wdrvjEXVDQX3H/+KTzTDOLKGhFJXzCyJO2autIvi1CIRnXdzEPHbezbzcxy5No3xcMUzabtJB3fQz1YF8BxfQQjEZPi2UoZg=";
+	const ENCRYPTED_POSTFIX = "U2FsdGVkX1/WmMFyo04aeF4q6YEXcTWamEPconzbNG7p2f7/FHdmPmQEYeGHV1oUbEFwkwMcoS9mY7fhurxbwbWy14iEqj7epaCDjmeiAoA=";
+	</script>
 
 </head>
 <body>
+<!-- PIN Modal Remove or diable this block if no Modal is needed -->
+<div id="pinModal" class="pin-modal">
+  <div class="pin-modal-content">
+    <h2>Enter PIN</h2>
+
+    <!-- Buttons on top, centered -->
+    <div class="pin-top-buttons">
+      <button type="button" id="fetchDropboxBtn">🌐</button>
+      <button type="button" id="pinKeyUploadBtn">📂</button>
+    </div>
+
+    <!-- Input below buttons -->
+    <input type="password" id="pinKeyInput" value="ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚" placeholder="Paste key or Dropbox link">
+    <input type="tel" id="pinInput" placeholder="PIN" maxlength="10" pattern="[0-9]*" inputmode="numeric">
+    <button id="pinSubmit">Unlock</button>
+    <div id="pinError">Incorrect PIN. Try again.</div>
+  </div>
+</div>
+<!-- PIN Modal Remove or diable this block if no Modal is needed -->
   <h2> Input Data Form</h2>
 
   <!-- Account XML Inputs at the Top -->
@@ -227,12 +388,13 @@ button:active {
 
 
   <label>Original Text (paste encrypted Base64 or plaintext):</label>
+  <input type="file" id="fileInput" accept=".txt" class="form-control"><br>
   <textarea id="originalText" rows="10"></textarea>
   <div id="originalTextCount" style="font-size:0.85rem; color:#555; margin-bottom:8px;">0 characters</div>
 
 
   <label>Password:</label>
-  <input type="password" id="password">
+  <input type="password" id="aesPassword" placeholder="Enter password">
 
   <div class="small-row">
     <label style="margin:0;"><input type="checkbox" id="applyPrefix" checked> Apply PREFIX/SUFFIX</label>
@@ -401,6 +563,81 @@ setInterval(() => {
         updateCharCount('resultText', 'resultTextCount');
     }
 }, 200);
+
+// Initialize PIN modal
+setupPINModal({
+    pinInputId: 'pinInput',
+    keyInputId: 'pinKeyInput',
+    modalId: 'pinModal',
+    pinSubmitId: 'pinSubmit',
+    errorId: 'pinError',
+    autoUnlock: true // automatically verify PIN while typing
+});
+
+
+// Setup file upload button
+setupUploadButton('pinKeyUploadBtn', 'pinKeyInput');
+
+// Setup fetch button (optional)
+setupFetchButton('fetchDropboxBtn', 'pinKeyInput', showToast);
+
+
+function getRawPass() {
+    const userPass = document.getElementById("aesPassword").value.trim();
+    if (!userPass) {
+        showToast("Enter password.", "error");
+        return null;
+    }
+
+    // Only append prefix/postfix if checkbox is checked
+    const apply = document.getElementById("applyPrefix").checked;
+    let rawPass = userPass;
+    if (apply && typeof PREFIXS !== "undefined" && typeof POSTFIXS !== "undefined") {
+        rawPass = PREFIXS + userPass + POSTFIXS;
+    }
+
+    return rawPass;
+}
+
+function encryptText() {
+    const rawPass = getRawPass();
+    if (!rawPass) return;
+
+    const plaintext = document.getElementById("originalText").value;
+    if (!plaintext) {
+        showToast("Enter text to encrypt.", "error");
+        return;
+    }
+
+    try {
+        const ciphertext = base.encryptText(plaintext, rawPass, true);
+        document.getElementById("resultText").value = ciphertext;
+        showToast("Encryption successful!", "success");
+    } catch (err) {
+        console.error(err);
+        showToast("Encryption failed.", "error");
+    }
+}
+
+function decryptText() {
+    const rawPass = getRawPass();
+    if (!rawPass) return;
+
+    const ciphertext = document.getElementById("originalText").value;
+    if (!ciphertext) {
+        showToast("Enter text to decrypt.", "error");
+        return;
+    }
+
+    try {
+        const plaintext = base.decryptText(ciphertext, rawPass, true);
+        document.getElementById("resultText").value = plaintext;
+        showToast("Decryption successful!", "success");
+    } catch (err) {
+        console.error(err);
+        showToast("Decryption failed. Ensure correct password and OpenSSL format.", "error");
+    }
+}
 
   </script>
 </body>
