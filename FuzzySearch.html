@@ -359,69 +359,144 @@
   white-space: pre-wrap;        /* preserves multiline format */
 }
 
-
+/* MODAL CSS IF Removal is Needed */
 /* Modern minimal PIN modal */
 .pin-modal {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5); /* dimmed background */
-  backdrop-filter: blur(6px);  /* modern blur */
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  padding: 10px; /* ensure small screens have some padding */
+  box-sizing: border-box;
 }
 
 .pin-modal-content {
   background: #fff;
   color: #111;
-  padding: 30px 30px;
+  padding: 20px;
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  min-width: 280px;
-  max-width: 90%;
+  min-width: 260px;
+  max-width: 400px; /* prevent extreme width on large screens */
+  width: 100%;      /* responsive width */
+  box-sizing: border-box;
   transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 .pin-modal-content h2 {
-  margin-bottom: 20px;
-  font-size: 1.5rem;
+  margin-bottom: 12px;
+  font-size: 1.3rem;
   font-weight: 600;
 }
 
-.pin-modal-content input {
-  font-size: 1.1rem;
-  padding: 10px 12px;
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+/* Top buttons row */
+.pin-top-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
   margin-bottom: 12px;
-  text-align: center;
-  background: #f8f9fa;
 }
 
-.pin-modal-content button {
-  padding: 10px 16px;
-  font-size: 1rem;
+.pin-top-buttons button {
+  padding: 6px 10px;
+  font-size: 0.85rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   background-color: #007bff;
   color: #fff;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.pin-modal-content button:hover {
+.pin-top-buttons button:hover {
   background-color: #0056b3;
 }
 
+/* Inputs */
+.pin-modal-content input {
+  font-size: 1rem;
+  padding: 10px 12px;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  text-align: center;
+  background: #f8f9fa;
+  box-sizing: border-box;
+}
+
+/* Unlock button */
+.pin-modal-content button#pinSubmit {
+  padding: 10px 16px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.pin-modal-content button#pinSubmit:hover {
+  background-color: #0056b3;
+}
+
+/* Error message */
 #pinError {
   color: #dc3545;
   margin-top: 8px;
   font-size: 0.875rem;
   display: none;
 }
+
+/* Responsive tweaks for tiny screens */
+@media (max-width: 320px) {
+  .pin-modal-content {
+    padding: 20px 15px;   /* reduce padding */
+    min-width: auto;      /* allow shrinking below 280px */
+    width: 90%;           /* occupy almost full screen */
+  }
+
+  .pin-modal-content input,
+  .pin-modal-content button#pinSubmit {
+    font-size: 0.95rem;   /* slightly smaller text */
+    padding: 8px 10px;    /* smaller padding */
+  }
+
+  .pin-top-buttons button {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+}
+
+
+/* Unlock button */
+.pin-modal-content button#pinSubmit {
+  width: 100%;           /* make full width like input */
+  padding: 10px 16px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  transition: background-color 0.2s ease;
+
+  /* Fix text alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+/* MODAL CSS IF Removal is Needed */
 
 
   </style>
@@ -438,15 +513,25 @@ const ENCRYPTED_POSTFIX = "U2FsdGVkX1/WmMFyo04aeF4q6YEXcTWamEPconzbNG7p2f7/FHdmP
 </head>
 
 <body>
-<!-- PIN Modal -->
+<!-- PIN Modal Remove or diable this block if no Modal is needed -->
 <div id="pinModal" class="pin-modal">
   <div class="pin-modal-content">
     <h2>Enter PIN</h2>
-    <input type="password" id="pinInput" placeholder="PIN" maxlength="10">
+
+    <!-- Buttons on top, centered -->
+    <div class="pin-top-buttons">
+      <button type="button" id="fetchDropboxBtn">🌐</button>
+      <button type="button" id="pinKeyUploadBtn">📂</button>
+    </div>
+
+    <!-- Input below buttons -->
+    <input type="password" id="pinKeyInput" value="ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚" placeholder="Paste key or Dropbox link">
+    <input type="tel" id="pinInput" placeholder="PIN" maxlength="10" pattern="[0-9]*" inputmode="numeric">
     <button id="pinSubmit">Unlock</button>
     <div id="pinError">Incorrect PIN. Try again.</div>
   </div>
 </div>
+<!-- PIN Modal Remove or diable this block if no Modal is needed -->
 
 
 
@@ -904,45 +989,22 @@ document.getElementById('aesPassword').addEventListener('keypress', function(e) 
   }
 });
 
-// --- PIN Unlock ---
-const pinModal = document.getElementById('pinModal');
-const pinInput = document.getElementById('pinInput');
-const pinSubmit = document.getElementById('pinSubmit');
-const pinError = document.getElementById('pinError');
-
-// ✅ New hardcoded PIN security values
-const PINPREFIX = "ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚";   // exposed in code
-const PINPOSTFIX = "ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚ꙮ₪؋₩฿₺৳⸘⍰⌘⏚⧫🂡🝰🜚"; // exposed in code
-
-// blur page until PIN entered
-document.body.classList.add('blur');
-pinInput.focus();
-
-pinSubmit.addEventListener('click', unlockWithPIN);
-pinInput.addEventListener('keyup', function(e){
-    if(e.key === 'Enter') unlockWithPIN();
+// Initialize PIN modal
+setupPINModal({
+    pinInputId: 'pinInput',
+    keyInputId: 'pinKeyInput',
+    modalId: 'pinModal',
+    pinSubmitId: 'pinSubmit',
+    errorId: 'pinError',
+    autoUnlock: true // automatically verify PIN while typing
 });
 
-function unlockWithPIN() {
-    const pin = pinInput.value.trim();
-    try {
-        // Combine PIN with dedicated PINPREFIX & PINPOSTFIX
-        const combinedPIN = PINPREFIX + pin + PINPOSTFIX;
 
-        // Use combinedPIN to decrypt ENCRYPTED_PREFIX and ENCRYPTED_POSTFIX
-        PREFIXS = base.decryptText(ENCRYPTED_PREFIX, combinedPIN);
-        POSTFIXS = base.decryptText(ENCRYPTED_POSTFIX, combinedPIN);
+// Setup file upload button
+setupUploadButton('pinKeyUploadBtn', 'pinKeyInput');
 
-        // hide modal & remove blur
-        pinModal.style.display = 'none';
-        document.body.classList.remove('blur');
-    } catch(err) {
-        pinError.style.display = 'block';
-        pinInput.value = '';
-        pinInput.focus();
-    }
-}
-
+// Setup fetch button (optional)
+setupFetchButton('fetchDropboxBtn', 'pinKeyInput', showToast);
 
 </script>
 
