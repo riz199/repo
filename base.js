@@ -2,8 +2,7 @@ const PBKDF2_ITERATIONS = 10000;
 const KEY_BYTES = 32; 
 const IV_BYTES  = 16;
 const SALT_BYTES = 8; 
-const PREFIX = "";
-const SUFFIX = "";
+
 
 
 document.getElementById('fileInput').addEventListener('change', function (e) {
@@ -30,7 +29,7 @@ function showToast(message, type='info') {
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300); // wait for fade-out transition
-  }, 3000);
+  }, 1000);
 }
 
 
@@ -39,12 +38,11 @@ function encryptText() {
   const rawPass = document.getElementById('password').value || '';
   if (!text || !rawPass) return showToast("Please enter both text and password.", "error");
 
-  const applyPrefix = document.getElementById('applyPrefix').checked;
-  const pass = applyPrefix ? (PREFIX + rawPass + SUFFIX) : rawPass;
+
 
   const salt = CryptoJS.lib.WordArray.random(SALT_BYTES);
   const totalBytes = KEY_BYTES + IV_BYTES;
-  const derived = CryptoJS.PBKDF2(pass, salt, {
+  const derived = CryptoJS.PBKDF2(rawPass, salt, {
     keySize: totalBytes / 4,
     iterations: PBKDF2_ITERATIONS,
     hasher: CryptoJS.algo.SHA256
@@ -67,8 +65,6 @@ function decryptText() {
   const rawPass = document.getElementById('password').value || '';
   if (!rawInput || !rawPass) return showToast("Please enter both encrypted text and password.", "error");
 
-  const applyPrefix = document.getElementById('applyPrefix').checked;
-  const pass = applyPrefix ? (PREFIX + rawPass + SUFFIX) : rawPass;
 
   try {
     const lines = rawInput.split(/\r?\n/).filter(l => l.trim() !== '');
@@ -85,7 +81,7 @@ function decryptText() {
       const ciphertextWA = CryptoJS.lib.WordArray.create(cipherWords, cipherBytes);
 
       const totalBytes = KEY_BYTES + IV_BYTES;
-      const derived = CryptoJS.PBKDF2(pass, saltWA, {
+      const derived = CryptoJS.PBKDF2(rawPass, saltWA, {
         keySize: totalBytes / 4, iterations: PBKDF2_ITERATIONS, hasher: CryptoJS.algo.SHA256
       });
 
@@ -131,8 +127,8 @@ function copyResult() {
 
 // Global object to expose encryption/decryption for external scripts
 const base = {
-  encryptText: function(text, password, applyPrefix = true) {
-    const pass = applyPrefix ? (PREFIX + password + SUFFIX) : password;
+  encryptText: function(text, password) {
+    const pass = password;
 
     const salt = CryptoJS.lib.WordArray.random(SALT_BYTES);
     const totalBytes = KEY_BYTES + IV_BYTES;
@@ -151,8 +147,8 @@ const base = {
     return CryptoJS.enc.Base64.stringify(combined);
   },
 
-  decryptText: function(b64, password, applyPrefix = true) {
-    const pass = applyPrefix ? (PREFIX + password + SUFFIX) : password;
+  decryptText: function(b64, password) {
+    const pass = password;
     const rawWA = CryptoJS.enc.Base64.parse(b64.trim());
 
     const prefixWA = CryptoJS.lib.WordArray.create(rawWA.words.slice(0, 2), 8);
