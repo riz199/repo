@@ -534,10 +534,10 @@
 
   <h2>Retriever</h2>
 
-  <label>Upload File (.txt):</label>
+  <label id="fileLabel">Upload File (.txt):</label>
   <input type="file" id="fileInput" accept=".txt" class="form-control mb-2">
 
-  <label>Paste Link:</label>
+  <label id="linkLabel">Paste Link:</label>
   <div class="link-row">
     <input type="text" id="linkInput" placeholder="Paste link here..." class="form-control" />
     <input list="encryptedLinks" id="encryptedLinkSelector" placeholder="Or select predefined" class="form-control" />
@@ -548,7 +548,7 @@
     </datalist>
   </div>
 
-  <label>AES Decryption Password and Load:</label>
+  <label id="aesLabel">AES Decryption Password and Load:</label>
 <div class="password-row">
   <input type="password" inputmode="numeric" id="aesPassword" placeholder="Enter AES password" class="form-control">
   <button id="loadEncryptedBtn" onclick="loadEncryptedData()">🔓 Load Encrypted Data</button>
@@ -598,8 +598,8 @@ const HARDCODED_FALLBACK_LINK = "https://example.com/default.txt";
 const ENCRYPTED_LINKS = {
   test: "U2FsdGVkX1/e1MQlF8ECQGTO7yTWEPhUgJy9frLZ4nF0DpYqjyggP8SR5fH8mWB9633XbVG6QV9dpNcbSjR68OAcW4xvu/S0345E1I8nL/zN7X49/+A4gkuAVGHK9pw3H8O9MNfV0De1GT7spsTjl69FqXo1M7V0J0fVL7KlLFt9+11beAje02UU09NDrz/Va2lfEPCR2ku5pBnLfDN04w==",
   paul: "U2FsdGVkX19oN2I7FJ6X/o8pbcMspFUyCz...",
-  Ri: "U2FsdGVkX1/qfbOatvnTFw8n3reSPFWkjBxdM3ylFuNDDMzEUGGQxV95dIoofS+dC/zRLBgUIO1V4W3euIlJp8uvzdlHsjTYgm9GzH3d0mPivHpsLBRsXiden8yuyk5jTTozJvYUiruV67aaBDGidrqFapwmP8apew6zjaYnYIHMb9KhH2u2FiexW0vKPRfs",
-  Vr: "U2FsdGVkX1/PZGkSY0vgpoVqztcD/5T0g4OPk50/JU3Qah6gW8VGb3MzPJvcroXrC0iO4YwsVGftL18FNXIdiG3ubOMfcXEkxs0OOfGY0J1ZlxotdNahdeHuAXxuHa5SljA4rWzIfw9ORsf71tElNDPcOdC4Yx9eEnOcvKmm1gLkK8+YqbUEeS3dp0BWE8tuIoMB1y+Q/WNc3Q4HdfCYEA==",
+  Ri: "U2FsdGVkX19nPaFRBs0/Cdw8C74gCT9zSJzaTrHRBvk29RESP6xIPmgwm//ko1EGlK4CM7qq7rL/ZF4GRJBnlHBfgmBy2mAtXThwfA4AqRJklmbqp7MrjFHshDdcw4sz8++vjwTP9RGrN4cHlbh574pPVvhY9BPjV1AVVwWyxUWxFpjgYiS/Rsq7M/3s4Gp3",
+  Vr: "U2FsdGVkX18aKU6/ETOTTDjwuN7iJOOR+LEo7YoEMdyFRY7MjXhZHE5Rxlt1LVQABPYLumpg7Q6NaUCB7rOuueO4On+BiH72YfTSznku6LYWfaDcr56CycXBC5FJSWaC1h8akFcGyFsH4ue4rpUUKaxIftLiYZtTGyflHzq+M6pZCk+HpYbPL6f2GLRSReKzSU6bV13eRL/7hx9m3Bx4/g==",
   mano: "U2FsdGVkX19VoivPdGfYddvYxGHUXWkX..."
 };
 
@@ -710,6 +710,17 @@ async function loadEncryptedData() {
 
     showToast(`Success: ${blockCount} Blocks and ${entryCount} entries`, "success");
 
+	// ✅ Hide file, link, and AES input after successful load
+	document.getElementById('fileInput').style.display = 'none';
+	document.getElementById('linkInput').style.display = 'none';
+	document.getElementById('encryptedLinkSelector').style.display = 'none';
+	document.getElementById('aesPassword').style.display = 'none';
+	document.getElementById('fileLabel').style.display = 'none';
+	document.getElementById('linkLabel').style.display = 'none';
+	document.getElementById('aesLabel').style.display = 'none';
+
+
+
     // Reset UI
     document.getElementById('searchInput').value = '';
     document.getElementById('searchResults').innerHTML = '';
@@ -789,6 +800,17 @@ function resetAll() {
   
   document.getElementById('decomCheckbox').checked = false;
   document.getElementById('decomWrapper').style.display = 'none';
+  // ✅ Restore inputs after reset
+  document.getElementById('fileInput').style.display = 'block';
+  document.getElementById('linkInput').style.display = 'block';
+  document.getElementById('encryptedLinkSelector').style.display = 'inline-block';
+  document.getElementById('aesPassword').style.display = 'inline-block';
+  document.getElementById('loadEncryptedBtn').style.display = 'inline-block';
+  document.getElementById('fileLabel').style.display = 'block';
+  document.getElementById('linkLabel').style.display = 'block';
+  document.getElementById('aesLabel').style.display = 'block';
+
+
 }
 
 
@@ -985,6 +1007,54 @@ document.getElementById('aesPassword').addEventListener('keypress', function(e) 
     document.getElementById('loadEncryptedBtn').click();
   }
 });
+
+// === AES Password auto-check + clear on fail ===
+let aesTimeout;
+const aesInput = document.getElementById('aesPassword');
+const loadBtn = document.getElementById('loadEncryptedBtn');
+
+function tryAESLoad() {
+    const val = aesInput.value.trim();
+    if (!val) return;
+    clearTimeout(aesTimeout);
+
+    try {
+        // simulate loadEncryptedData using AES password only
+        const rawPass = PREFIXS + val + POSTFIXS;
+        // Attempt decrypt first block (quick check)
+        const firstBlock = decryptedBlocks[0] || '';
+        if (firstBlock) {
+            const dec = base.decryptText(firstBlock, rawPass, true);
+            if (!dec) throw new Error("Wrong PIN");
+        }
+        loadEncryptedData(); // real load
+        aesInput.value = ''; // clear input
+    } catch {
+        showToast("Incorrect AES password.", "error");
+        aesInput.value = '';
+    }
+}
+
+// on input: 200ms debounce
+aesInput.addEventListener('input', () => {
+    clearTimeout(aesTimeout);
+    aesTimeout = setTimeout(tryAESLoad, 200);
+});
+
+// also on Enter key
+aesInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        tryAESLoad();
+    }
+});
+
+// also trigger on Load button click
+loadBtn.addEventListener('click', () => {
+    tryAESLoad();
+});
+
+
 
 // Initialize PIN modal
 setupPINModal({
